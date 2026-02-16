@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pain au Chocolat: Total War</title>
+    <style>
+        body { font-family: 'Impact', sans-serif; text-align: center; background: #1a1a1a; color: white; margin: 0; padding: 20px; }
+        h1 { color: #f1c40f; text-transform: uppercase; font-size: 2.5rem; margin-bottom: 10px; }
+        .subtitle { font-style: italic; opacity: 0.8; margin-bottom: 30px; }
+        
+        .battlefield { display: flex; justify-content: space-around; flex-wrap: wrap; gap: 20px; }
+        .warrior { background: #2c3e50; padding: 20px; border-radius: 15px; width: 40%; min-width: 280px; border: 3px solid transparent; transition: 0.3s; }
+        .warrior:hover { border-color: #f1c40f; }
+        
+        .score { font-size: 3rem; margin: 10px 0; }
+        button { background: #f1c40f; border: none; padding: 15px 30px; font-weight: bold; border-radius: 5px; cursor: pointer; width: 100%; font-size: 1.2rem; }
+        button:disabled { background: #7f8c8d; cursor: not-allowed; }
+        
+        .progress-container { background: #34495e; height: 30px; width: 100%; border-radius: 15px; margin-top: 50px; overflow: hidden; display: flex; }
+        #bar-pain { background: #e67e22; width: 50%; transition: 1s ease; }
+        #bar-choco { background: #9b59b6; width: 50%; transition: 1s ease; }
+    </style>
+</head>
+<body>
+    <h1>Pain au Chocolat: Total War</h1>
+    <p class="subtitle">Le duel final. Un vote par jour par soldat.</p>
+
+    <div class="battlefield">
+        <div class="warrior">
+            <h2>PAIN AU CHOCOLAT</h2>
+            <div class="score" id="score-pain">0</div>
+            <button id="btn-pain" onclick="castVote('pain')">REJOINDRE LE CAMP</button>
+        </div>
+        <div class="warrior">
+            <h2>CHOCOLATINE</h2>
+            <div class="score" id="score-choco">0</div>
+            <button id="btn-choco" onclick="castVote('chocolatine')">REJOINDRE LE CAMP</button>
+        </div>
+    </div>
+
+    <div class="progress-container">
+        <div id="bar-pain"></div>
+        <div id="bar-choco"></div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+
+        function castVote(choice) {
+            socket.emit('vote', choice);
+        }
+
+        socket.on('updateScores', (scores) => {
+            document.getElementById('score-pain').innerText = scores.pain;
+            document.getElementById('score-choco').innerText = scores.chocolatine;
+            
+            // Mise à jour de la barre
+            const total = scores.pain + scores.chocolatine || 1;
+            document.getElementById('bar-pain').style.width = (scores.pain / total * 100) + "%";
+            document.getElementById('bar-choco').style.width = (scores.chocolatine / total * 100) + "%";
+        });
+
+        socket.on('voteSuccess', () => {
+            document.querySelectorAll('button').forEach(b => b.disabled = true);
+            alert("Merci pour ton service, soldat ! Reviens demain.");
+        });
+
+        socket.on('alreadyVoted', (msg) => {
+            alert(msg);
+            document.querySelectorAll('button').forEach(b => b.disabled = true);
+        });
+    </script>
+</body>
+</html>
