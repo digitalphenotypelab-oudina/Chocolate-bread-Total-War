@@ -1,0 +1,15 @@
+{
+  "name": "Pain au Chocolat: Total War",
+  "short_name": "Total War",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a1a1a",
+  "theme_color": "#f1c40f",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3041/3041130.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
