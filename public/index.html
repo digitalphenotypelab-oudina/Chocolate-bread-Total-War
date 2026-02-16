@@ -3,20 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pain au Chocolat: Total War - INTENSIVE</title>
+    <title>Pain au Chocolat: Total War</title>
     <style>
         :root { --gold: #f1c40f; --dark: #1a1a1a; }
-        body { font-family: sans-serif; text-align: center; background: var(--dark); color: white; padding: 20px; }
-        .war-cabinet { background: #2c3e50; padding: 20px; border-radius: 15px; border: 2px solid var(--gold); margin-bottom: 20px; }
-        .battle-zone { display: flex; justify-content: center; gap: 20px; }
-        .card { background: #34495e; padding: 20px; border-radius: 10px; width: 200px; }
-        button { background: var(--gold); border: none; padding: 15px; width: 100%; font-weight: bold; border-radius: 5px; cursor: pointer; }
-        button:disabled { background: #7f8c8d; opacity: 0.5; }
-        
-        /* Combo et XP */
-        .combo-badge { color: #e74c3c; font-weight: bold; font-size: 1.2rem; display: none; }
-        #timer { color: var(--gold); font-weight: bold; margin: 10px 0; font-size: 1.1rem; }
-        .rank-info { margin-top: 30px; border-top: 1px solid #555; padding-top: 20px; }
+        body { font-family: 'Arial Black', sans-serif; text-align: center; background: var(--dark); color: white; padding: 20px; }
+        .war-cabinet { background: #2c3e50; padding: 30px; border-radius: 20px; border: 3px solid var(--gold); margin-bottom: 20px; }
+        .score-display { font-size: 3.5rem; color: var(--gold); text-shadow: 2px 2px 0px #000; margin: 20px 0; }
+        .battle-zone { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; }
+        .card { background: #34495e; padding: 20px; border-radius: 15px; width: 220px; }
+        button { background: var(--gold); border: none; padding: 15px; width: 100%; font-weight: bold; border-radius: 8px; cursor: pointer; font-size: 1.1rem; }
+        button:disabled { background: #7f8c8d; opacity: 0.5; cursor: not-allowed; }
+        #timer { color: #e74c3c; font-weight: bold; height: 20px; margin-bottom: 10px; }
+        .rank-info { margin-top: 40px; border-top: 1px solid #444; padding-top: 20px; }
+        #rank-name { color: var(--gold); font-size: 1.5rem; display: block; }
     </style>
 </head>
 <body>
@@ -24,12 +23,11 @@
     <h1>PAIN AU CHOCOLAT: TOTAL WAR</h1>
     
     <div class="war-cabinet">
-        <div>VICTOIRES HISTORIQUES</div>
-        <div style="font-size: 2.5rem; color: var(--gold);">
-            <span id="global-pain">0</span> — <span id="global-choco">0</span>
+        <div>SCORE MONDIAL EN DIRECT</div>
+        <div class="score-display">
+            <span id="score-pain">0</span> — <span id="score-choco">0</span>
         </div>
-        <div id="timer">Prêt pour le combat !</div>
-        <div class="combo-badge" id="combo-ui">COMBO X<span id="combo-val">1</span></div>
+        <div id="timer">Prêt pour l'assaut !</div>
     </div>
 
     <div class="battle-zone">
@@ -44,8 +42,8 @@
     </div>
 
     <div class="rank-info">
-        <div>XP TOTALE : <span id="user-xp">0</span></div>
-        <div id="rank-name" style="color: var(--gold); font-size: 1.5rem;">Recrue</div>
+        <div>VOTRE EXPÉRIENCE : <span id="user-xp">0</span> XP</div>
+        <span id="rank-name">Recrue du Pétrin</span>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
@@ -53,53 +51,39 @@
         const socket = io();
         let myXP = parseFloat(localStorage.getItem('war_xp')) || 0;
         let lastVoteTime = parseInt(localStorage.getItem('last_vote_ts')) || 0;
-        let comboCount = parseInt(localStorage.getItem('combo_count')) || 0;
 
-        function updateUI() {
+        function updateRank() {
             document.getElementById('user-xp').innerText = Math.floor(myXP);
-            
-            // Calcul du grade
-            let rank = "Recrue";
-            if(myXP > 50) rank = "Soldat de Choc";
-            if(myXP > 200) rank = "Commandant du Beurre";
-            if(myXP > 1000) rank = "Légende du Feuilletage";
+            let rank = "Recrue du Pétrin";
+            if(myXP >= 10) rank = "Soldat du Beurre";
+            if(myXP >= 50) rank = "Capitaine Croissant";
+            if(myXP >= 200) rank = "Général de la Chocolatine";
             document.getElementById('rank-name').innerText = rank;
-
-            // Affichage Combo
-            if(comboCount > 1) {
-                document.getElementById('combo-ui').style.display = "block";
-                document.getElementById('combo-val').innerText = (1 + (comboCount * 0.1)).toFixed(1);
-            } else {
-                document.getElementById('combo-ui').style.display = "none";
-            }
         }
 
         function startTimer(seconds) {
-            const btnP = document.getElementById('btn-pain');
-            const btnC = document.getElementById('btn-choco');
-            const timerMsg = document.getElementById('timer');
+            const btns = document.querySelectorAll('button');
+            btns.forEach(b => b.disabled = true);
             
-            btnP.disabled = btnC.disabled = true;
-
-            const interval = setInterval(() => {
+            const countdown = setInterval(() => {
                 seconds--;
                 if(seconds <= 0) {
-                    clearInterval(interval);
-                    btnP.disabled = btnC.disabled = false;
-                    timerMsg.innerText = "PRÊT !";
+                    clearInterval(countdown);
+                    btns.forEach(b => b.disabled = false);
+                    document.getElementById('timer').innerText = "Prêt pour l'assaut !";
                 } else {
                     let m = Math.floor(seconds / 60);
                     let s = seconds % 60;
-                    timerMsg.innerText = `Prochain vote dans ${m}:${s < 10 ? '0' : ''}${s}`;
+                    document.getElementById('timer').innerText = `Prochain vote dans ${m}:${s < 10 ? '0' : ''}${s}`;
                 }
             }, 1000);
         }
 
-        socket.on('updateScores', (data) => {
-            document.getElementById('global-pain').innerText = data.global.pain;
-            document.getElementById('global-choco').innerText = data.global.chocolatine;
+        socket.on('updateScores', (scores) => {
+            document.getElementById('score-pain').innerText = scores.pain;
+            document.getElementById('score-choco').innerText = scores.chocolatine;
             
-            // Gérer le timer au rechargement de la page
+            // Vérifier si on doit bloquer les boutons au chargement
             const now = Date.now();
             const diff = Math.floor((now - lastVoteTime) / 1000);
             if(diff < 300) startTimer(300 - diff);
@@ -110,31 +94,17 @@
         }
 
         socket.on('voteSuccess', (timestamp) => {
-            const now = timestamp;
-            
-            // Logique de Combo : si on vote moins de 10 min après le dernier vote (soit 5 min après la fin du timer)
-            if (now - lastVoteTime < 600000) { 
-                comboCount++;
-            } else {
-                comboCount = 1;
-            }
-
-            const multiplier = 1 + (comboCount * 0.1); // +10% d'XP par combo
-            myXP += (1 * multiplier);
-
-            lastVoteTime = now;
+            myXP += 1;
+            lastVoteTime = timestamp;
             localStorage.setItem('war_xp', myXP);
             localStorage.setItem('last_vote_ts', lastVoteTime);
-            localStorage.setItem('combo_count', comboCount);
-
-            updateUI();
+            updateRank();
             startTimer(300);
-            alert(`Succès ! +${multiplier.toFixed(1)} XP (Combo x${multiplier.toFixed(1)})`);
         });
 
         socket.on('tooSoon', (rem) => startTimer(rem));
 
-        updateUI();
+        updateRank();
     </script>
 </body>
 </html>
