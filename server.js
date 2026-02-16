@@ -6,35 +6,50 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// Base de données simplifiée en mémoire
-let scores = { pain: 0, chocolatine: 0 };
-let voters = {}; // Stocke l'IP + la date du dernier vote
+// Scores historiques (les points gagnés jour après jour)
+let globalWarScore = { pain: 0, chocolatine: 0 };
+// Votes de la journée en cours
+let dailyVotes = { pain: 0, chocolatine: 0 };
+let voters = {}; 
 
 app.use(express.static('public'));
 
+// Logique de minuit : On donne le point au gagnant du jour
+setInterval(() => {
+    const now = new Date();
+    if (now.getHours() === 0 && now.getMinutes() === 0) {
+        if (dailyVotes.pain > dailyVotes.dailyVotes.chocolatine) {
+            globalWarScore.pain++;
+        } else if (dailyVotes.chocolatine > dailyVotes.pain) {
+            globalWarScore.chocolatine++;
+        }
+        // Reset pour la nouvelle journée
+        dailyVotes = { pain: 0, chocolatine: 0 };
+        voters = {};
+        io.emit('updateScores', { global: globalWarScore, daily: dailyVotes });
+    }
+}, 60000); // Vérifie chaque minute
+
 io.on('connection', (socket) => {
-    // Envoie les scores actuels à la connexion
-    socket.emit('updateScores', scores);
+    socket.emit('updateScores', { global: globalWarScore, daily: dailyVotes });
 
     socket.on('vote', (choice) => {
-        // Récupération de l'IP (gestion proxy pour Render)
         const ip = socket.handshake.headers['x-forwarded-for'] || socket.conn.remoteAddress;
         const today = new Date().toDateString();
 
         if (voters[ip] === today) {
-            socket.emit('alreadyVoted', "Tu as déjà combattu aujourd'hui, soldat !");
+            socket.emit('alreadyVoted');
             return;
         }
 
-        // Enregistrement du vote
-        if (choice === 'pain' || choice === 'chocolatine') {
-            scores[choice]++;
+        if (dailyVotes[choice] !== undefined) {
+            dailyVotes[choice]++;
             voters[ip] = today;
-            io.emit('updateScores', scores);
+            io.emit('updateScores', { global: globalWarScore, daily: dailyVotes });
             socket.emit('voteSuccess');
         }
     });
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Guerre déclarée sur le port ${PORT}`));
+server.listen(PORT, () => console.log(`Guerre totale active sur le port ${PORT}`));

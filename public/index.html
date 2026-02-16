@@ -1,76 +1,56 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pain au Chocolat: Total War</title>
-    <style>
-        body { font-family: 'Impact', sans-serif; text-align: center; background: #1a1a1a; color: white; margin: 0; padding: 20px; }
-        h1 { color: #f1c40f; text-transform: uppercase; font-size: 2.5rem; margin-bottom: 10px; }
-        .subtitle { font-style: italic; opacity: 0.8; margin-bottom: 30px; }
-        
-        .battlefield { display: flex; justify-content: space-around; flex-wrap: wrap; gap: 20px; }
-        .warrior { background: #2c3e50; padding: 20px; border-radius: 15px; width: 40%; min-width: 280px; border: 3px solid transparent; transition: 0.3s; }
-        .warrior:hover { border-color: #f1c40f; }
-        
-        .score { font-size: 3rem; margin: 10px 0; }
-        button { background: #f1c40f; border: none; padding: 15px 30px; font-weight: bold; border-radius: 5px; cursor: pointer; width: 100%; font-size: 1.2rem; }
-        button:disabled { background: #7f8c8d; cursor: not-allowed; }
-        
-        .progress-container { background: #34495e; height: 30px; width: 100%; border-radius: 15px; margin-top: 50px; overflow: hidden; display: flex; }
-        #bar-pain { background: #e67e22; width: 50%; transition: 1s ease; }
-        #bar-choco { background: #9b59b6; width: 50%; transition: 1s ease; }
-    </style>
-</head>
-<body>
-    <h1>Pain au Chocolat: Total War</h1>
-    <p class="subtitle">Le duel final. Un vote par jour par soldat.</p>
-
-    <div class="battlefield">
-        <div class="warrior">
-            <h2>PAIN AU CHOCOLAT</h2>
-            <div class="score" id="score-pain">0</div>
-            <button id="btn-pain" onclick="castVote('pain')">REJOINDRE LE CAMP</button>
-        </div>
-        <div class="warrior">
-            <h2>CHOCOLATINE</h2>
-            <div class="score" id="score-choco">0</div>
-            <button id="btn-choco" onclick="castVote('chocolatine')">REJOINDRE LE CAMP</button>
-        </div>
+<div class="stats">
+    <h2>SCORE DE GUERRE MONDIAL</h2>
+    <div style="font-size: 2rem; color: #f1c40f;">
+        PAIN <span id="global-pain">0</span> - <span id="global-choco">0</span> CHOCO
     </div>
+    <p>Votes aujourd'hui : <span id="daily-pain">0</span> vs <span id="daily-choco">0</span></p>
+</div>
 
-    <div class="progress-container">
-        <div id="bar-pain"></div>
-        <div id="bar-choco"></div>
-    </div>
+<div id="user-rank" style="margin-top: 20px; padding: 10px; background: #444; border-radius: 10px;">
+    Votre Grade : <span id="rank-name" style="color: #f1c40f;">Recrue</span><br>
+    Expérience : <span id="user-xp">0</span> XP
+</div>
 
-    <script src="/socket.io/socket.io.js"></script>
-    <script>
-        const socket = io();
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io();
+    
+    // Récupérer l'XP locale ou démarrer à 0
+    let myXP = parseInt(localStorage.getItem('war_xp')) || 0;
+    
+    function updateRankDisplay() {
+        document.getElementById('user-xp').innerText = myXP;
+        let rank = "Recrue du pétrin";
+        if(myXP >= 5) rank = "Soldat du Beurre";
+        if(myXP >= 15) rank = "Capitaine Croissant";
+        if(myXP >= 30) rank = "Maréchal de la Mie";
+        document.getElementById('rank-name').innerText = rank;
+    }
 
-        function castVote(choice) {
-            socket.emit('vote', choice);
-        }
+    socket.on('updateScores', (data) => {
+        document.getElementById('global-pain').innerText = data.global.pain;
+        document.getElementById('global-choco').innerText = data.global.chocolatine;
+        document.getElementById('daily-pain').innerText = data.daily.pain;
+        document.getElementById('daily-choco').innerText = data.daily.chocolatine;
+        updateRankDisplay();
+    });
 
-        socket.on('updateScores', (scores) => {
-            document.getElementById('score-pain').innerText = scores.pain;
-            document.getElementById('score-choco').innerText = scores.chocolatine;
-            
-            // Mise à jour de la barre
-            const total = scores.pain + scores.chocolatine || 1;
-            document.getElementById('bar-pain').style.width = (scores.pain / total * 100) + "%";
-            document.getElementById('bar-choco').style.width = (scores.chocolatine / total * 100) + "%";
-        });
+    function castVote(choice) {
+        socket.emit('vote', choice);
+    }
 
-        socket.on('voteSuccess', () => {
-            document.querySelectorAll('button').forEach(b => b.disabled = true);
-            alert("Merci pour ton service, soldat ! Reviens demain.");
-        });
+    socket.on('voteSuccess', () => {
+        myXP += 1; // Augmente l'expérience
+        localStorage.setItem('war_xp', myXP);
+        updateRankDisplay();
+        alert("Action héroïque enregistrée ! +1 XP");
+        document.querySelectorAll('button').forEach(b => b.disabled = true);
+    });
 
-        socket.on('alreadyVoted', (msg) => {
-            alert(msg);
-            document.querySelectorAll('button').forEach(b => b.disabled = true);
-        });
-    </script>
-</body>
-</html>
+    socket.on('alreadyVoted', () => {
+        alert("Reposez-vous soldat, revenez demain !");
+        document.querySelectorAll('button').forEach(b => b.disabled = true);
+    });
+
+    updateRankDisplay();
+</script>
