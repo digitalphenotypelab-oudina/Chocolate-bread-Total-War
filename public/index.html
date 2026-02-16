@@ -3,180 +3,138 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pain au Chocolat: Total War</title>
-    <link rel="manifest" href="/manifest.json">
+    <title>Pain au Chocolat: Total War - INTENSIVE</title>
     <style>
-        :root {
-            --gold: #f1c40f;
-            --dark: #1a1a1a;
-            --grey: #2c3e50;
-        }
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            text-align: center; 
-            background: var(--dark); 
-            color: white; 
-            margin: 0; 
-            padding: 20px;
-        }
-        h1 { color: var(--gold); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; }
-        .subtitle { font-style: italic; opacity: 0.7; margin-bottom: 30px; }
-
-        /* Tableau de bord des scores */
-        .war-cabinet {
-            background: var(--grey);
-            padding: 20px;
-            border-radius: 15px;
-            border: 2px solid var(--gold);
-            margin-bottom: 30px;
-            max-width: 600px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-        .global-score { font-size: 2.5rem; font-weight: bold; color: var(--gold); margin: 10px 0; }
-        .daily-stats { font-size: 0.9rem; opacity: 0.8; }
-
-        /* Zone de combat */
-        .battlefield { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; }
-        .card {
-            background: #34495e;
-            padding: 20px;
-            border-radius: 10px;
-            width: 250px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-        }
-        button {
-            background: var(--gold);
-            border: none;
-            padding: 15px;
-            width: 100%;
-            font-weight: bold;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-top: 10px;
-            transition: transform 0.2s;
-        }
-        button:active { transform: scale(0.95); }
-        button:disabled { background: #7f8c8d; cursor: not-allowed; }
-
-        /* Grade et XP */
-        .rank-card {
-            margin-top: 40px;
-            border-top: 1px dashed var(--gold);
-            padding-top: 20px;
-        }
-        #rank-name { font-size: 1.4rem; color: var(--gold); display: block; margin-top: 5px; }
-        .xp-bar { font-size: 0.8rem; opacity: 0.6; }
-
-        /* Barre de progression visuelle */
-        .progress-battle {
-            height: 10px;
-            background: #000;
-            border-radius: 5px;
-            margin: 20px auto;
-            max-width: 600px;
-            display: flex;
-            overflow: hidden;
-        }
-        #bar-pain { background: #e67e22; width: 50%; transition: width 1s; }
-        #bar-choco { background: #9b59b6; width: 50%; transition: width 1s; }
+        :root { --gold: #f1c40f; --dark: #1a1a1a; }
+        body { font-family: sans-serif; text-align: center; background: var(--dark); color: white; padding: 20px; }
+        .war-cabinet { background: #2c3e50; padding: 20px; border-radius: 15px; border: 2px solid var(--gold); margin-bottom: 20px; }
+        .battle-zone { display: flex; justify-content: center; gap: 20px; }
+        .card { background: #34495e; padding: 20px; border-radius: 10px; width: 200px; }
+        button { background: var(--gold); border: none; padding: 15px; width: 100%; font-weight: bold; border-radius: 5px; cursor: pointer; }
+        button:disabled { background: #7f8c8d; opacity: 0.5; }
+        
+        /* Combo et XP */
+        .combo-badge { color: #e74c3c; font-weight: bold; font-size: 1.2rem; display: none; }
+        #timer { color: var(--gold); font-weight: bold; margin: 10px 0; font-size: 1.1rem; }
+        .rank-info { margin-top: 30px; border-top: 1px solid #555; padding-top: 20px; }
     </style>
 </head>
 <body>
 
-    <h1>Pain au Chocolat: Total War</h1>
-    <p class="subtitle">La bataille quotidienne pour l'honneur du feuilletage</p>
-
+    <h1>PAIN AU CHOCOLAT: TOTAL WAR</h1>
+    
     <div class="war-cabinet">
-        <div class="daily-stats">VICTOIRES HISTORIQUES</div>
-        <div class="global-score">
+        <div>VICTOIRES HISTORIQUES</div>
+        <div style="font-size: 2.5rem; color: var(--gold);">
             <span id="global-pain">0</span> — <span id="global-choco">0</span>
         </div>
-        <div class="progress-battle">
-            <div id="bar-pain"></div>
-            <div id="bar-choco"></div>
-        </div>
-        <div class="daily-stats">
-            Votes aujourd'hui : <span id="daily-pain">0</span> vs <span id="daily-choco">0</span>
-        </div>
+        <div id="timer">Prêt pour le combat !</div>
+        <div class="combo-badge" id="combo-ui">COMBO X<span id="combo-val">1</span></div>
     </div>
 
-    <div class="battlefield">
+    <div class="battle-zone">
         <div class="card">
             <h3>PAIN AU CHOCOLAT</h3>
-            <button id="btn-pain" onclick="castVote('pain')">COMBATTRE ICI</button>
+            <button id="btn-pain" onclick="castVote('pain')">VOTER</button>
         </div>
         <div class="card">
             <h3>CHOCOLATINE</h3>
-            <button id="btn-choco" onclick="castVote('chocolatine')">COMBATTRE ICI</button>
+            <button id="btn-choco" onclick="castVote('chocolatine')">VOTER</button>
         </div>
     </div>
 
-    <div class="rank-card">
-        <div class="xp-bar">ÉTAT-MAJOR : <span id="user-xp">0</span> POINTS D'EXPÉRIENCE</div>
-        <span id="rank-name">Recrue du Pétrin</span>
+    <div class="rank-info">
+        <div>XP TOTALE : <span id="user-xp">0</span></div>
+        <div id="rank-name" style="color: var(--gold); font-size: 1.5rem;">Recrue</div>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
-        
-        // --- GESTION DE L'EXPÉRIENCE LOCALE ---
-        let myXP = parseInt(localStorage.getItem('war_xp')) || 0;
+        let myXP = parseFloat(localStorage.getItem('war_xp')) || 0;
+        let lastVoteTime = parseInt(localStorage.getItem('last_vote_ts')) || 0;
+        let comboCount = parseInt(localStorage.getItem('combo_count')) || 0;
 
-        function updateRankDisplay() {
-            document.getElementById('user-xp').innerText = myXP;
-            let rank = "Recrue du Pétrin";
+        function updateUI() {
+            document.getElementById('user-xp').innerText = Math.floor(myXP);
             
-            if(myXP >= 5)  rank = "Soldat du Beurre";
-            if(myXP >= 15) rank = "Sergent du Feuilletage";
-            if(myXP >= 30) rank = "Lieutenant de la Baguette";
-            if(myXP >= 50) rank = "Commandant de la Croûte";
-            if(myXP >= 100) rank = "MARÉCHAL DE LA RÉPUBLIQUE";
-            
+            // Calcul du grade
+            let rank = "Recrue";
+            if(myXP > 50) rank = "Soldat de Choc";
+            if(myXP > 200) rank = "Commandant du Beurre";
+            if(myXP > 1000) rank = "Légende du Feuilletage";
             document.getElementById('rank-name').innerText = rank;
+
+            // Affichage Combo
+            if(comboCount > 1) {
+                document.getElementById('combo-ui').style.display = "block";
+                document.getElementById('combo-val').innerText = (1 + (comboCount * 0.1)).toFixed(1);
+            } else {
+                document.getElementById('combo-ui').style.display = "none";
+            }
         }
 
-        // --- RÉCEPTION DES SCORES ---
+        function startTimer(seconds) {
+            const btnP = document.getElementById('btn-pain');
+            const btnC = document.getElementById('btn-choco');
+            const timerMsg = document.getElementById('timer');
+            
+            btnP.disabled = btnC.disabled = true;
+
+            const interval = setInterval(() => {
+                seconds--;
+                if(seconds <= 0) {
+                    clearInterval(interval);
+                    btnP.disabled = btnC.disabled = false;
+                    timerMsg.innerText = "PRÊT !";
+                } else {
+                    let m = Math.floor(seconds / 60);
+                    let s = seconds % 60;
+                    timerMsg.innerText = `Prochain vote dans ${m}:${s < 10 ? '0' : ''}${s}`;
+                }
+            }, 1000);
+        }
+
         socket.on('updateScores', (data) => {
-            // Mise à jour des chiffres
             document.getElementById('global-pain').innerText = data.global.pain;
             document.getElementById('global-choco').innerText = data.global.chocolatine;
-            document.getElementById('daily-pain').innerText = data.daily.pain;
-            document.getElementById('daily-choco').innerText = data.daily.chocolatine;
-
-            // Mise à jour de la barre visuelle (basée sur les votes du jour)
-            const total = data.daily.pain + data.daily.chocolatine || 1;
-            const percentPain = (data.daily.pain / total) * 100;
-            document.getElementById('bar-pain').style.width = percentPain + "%";
-            document.getElementById('bar-choco').style.width = (100 - percentPain) + "%";
+            
+            // Gérer le timer au rechargement de la page
+            const now = Date.now();
+            const diff = Math.floor((now - lastVoteTime) / 1000);
+            if(diff < 300) startTimer(300 - diff);
         });
 
-        // --- ACTION DE VOTE ---
         function castVote(choice) {
             socket.emit('vote', choice);
         }
 
-        socket.on('voteSuccess', () => {
-            myXP += 1; // +1 XP par vote réussi
+        socket.on('voteSuccess', (timestamp) => {
+            const now = timestamp;
+            
+            // Logique de Combo : si on vote moins de 10 min après le dernier vote (soit 5 min après la fin du timer)
+            if (now - lastVoteTime < 600000) { 
+                comboCount++;
+            } else {
+                comboCount = 1;
+            }
+
+            const multiplier = 1 + (comboCount * 0.1); // +10% d'XP par combo
+            myXP += (1 * multiplier);
+
+            lastVoteTime = now;
             localStorage.setItem('war_xp', myXP);
-            updateRankDisplay();
-            disableButtons();
-            alert("Action héroïque enregistrée ! Votre influence grandit.");
+            localStorage.setItem('last_vote_ts', lastVoteTime);
+            localStorage.setItem('combo_count', comboCount);
+
+            updateUI();
+            startTimer(300);
+            alert(`Succès ! +${multiplier.toFixed(1)} XP (Combo x${multiplier.toFixed(1)})`);
         });
 
-        socket.on('alreadyVoted', () => {
-            disableButtons();
-            alert("Repos, soldat ! Vous avez déjà combattu aujourd'hui.");
-        });
+        socket.on('tooSoon', (rem) => startTimer(rem));
 
-        function disableButtons() {
-            document.getElementById('btn-pain').disabled = true;
-            document.getElementById('btn-choco').disabled = true;
-        }
-
-        // Initialisation au chargement
-        updateRankDisplay();
+        updateUI();
     </script>
 </body>
 </html>
