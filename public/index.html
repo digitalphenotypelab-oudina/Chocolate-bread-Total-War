@@ -1,56 +1,182 @@
-<div class="stats">
-    <h2>SCORE DE GUERRE MONDIAL</h2>
-    <div style="font-size: 2rem; color: #f1c40f;">
-        PAIN <span id="global-pain">0</span> - <span id="global-choco">0</span> CHOCO
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pain au Chocolat: Total War</title>
+    <link rel="manifest" href="/manifest.json">
+    <style>
+        :root {
+            --gold: #f1c40f;
+            --dark: #1a1a1a;
+            --grey: #2c3e50;
+        }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            text-align: center; 
+            background: var(--dark); 
+            color: white; 
+            margin: 0; 
+            padding: 20px;
+        }
+        h1 { color: var(--gold); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; }
+        .subtitle { font-style: italic; opacity: 0.7; margin-bottom: 30px; }
+
+        /* Tableau de bord des scores */
+        .war-cabinet {
+            background: var(--grey);
+            padding: 20px;
+            border-radius: 15px;
+            border: 2px solid var(--gold);
+            margin-bottom: 30px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .global-score { font-size: 2.5rem; font-weight: bold; color: var(--gold); margin: 10px 0; }
+        .daily-stats { font-size: 0.9rem; opacity: 0.8; }
+
+        /* Zone de combat */
+        .battlefield { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; }
+        .card {
+            background: #34495e;
+            padding: 20px;
+            border-radius: 10px;
+            width: 250px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+        button {
+            background: var(--gold);
+            border: none;
+            padding: 15px;
+            width: 100%;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: transform 0.2s;
+        }
+        button:active { transform: scale(0.95); }
+        button:disabled { background: #7f8c8d; cursor: not-allowed; }
+
+        /* Grade et XP */
+        .rank-card {
+            margin-top: 40px;
+            border-top: 1px dashed var(--gold);
+            padding-top: 20px;
+        }
+        #rank-name { font-size: 1.4rem; color: var(--gold); display: block; margin-top: 5px; }
+        .xp-bar { font-size: 0.8rem; opacity: 0.6; }
+
+        /* Barre de progression visuelle */
+        .progress-battle {
+            height: 10px;
+            background: #000;
+            border-radius: 5px;
+            margin: 20px auto;
+            max-width: 600px;
+            display: flex;
+            overflow: hidden;
+        }
+        #bar-pain { background: #e67e22; width: 50%; transition: width 1s; }
+        #bar-choco { background: #9b59b6; width: 50%; transition: width 1s; }
+    </style>
+</head>
+<body>
+
+    <h1>Pain au Chocolat: Total War</h1>
+    <p class="subtitle">La bataille quotidienne pour l'honneur du feuilletage</p>
+
+    <div class="war-cabinet">
+        <div class="daily-stats">VICTOIRES HISTORIQUES</div>
+        <div class="global-score">
+            <span id="global-pain">0</span> — <span id="global-choco">0</span>
+        </div>
+        <div class="progress-battle">
+            <div id="bar-pain"></div>
+            <div id="bar-choco"></div>
+        </div>
+        <div class="daily-stats">
+            Votes aujourd'hui : <span id="daily-pain">0</span> vs <span id="daily-choco">0</span>
+        </div>
     </div>
-    <p>Votes aujourd'hui : <span id="daily-pain">0</span> vs <span id="daily-choco">0</span></p>
-</div>
 
-<div id="user-rank" style="margin-top: 20px; padding: 10px; background: #444; border-radius: 10px;">
-    Votre Grade : <span id="rank-name" style="color: #f1c40f;">Recrue</span><br>
-    Expérience : <span id="user-xp">0</span> XP
-</div>
+    <div class="battlefield">
+        <div class="card">
+            <h3>PAIN AU CHOCOLAT</h3>
+            <button id="btn-pain" onclick="castVote('pain')">COMBATTRE ICI</button>
+        </div>
+        <div class="card">
+            <h3>CHOCOLATINE</h3>
+            <button id="btn-choco" onclick="castVote('chocolatine')">COMBATTRE ICI</button>
+        </div>
+    </div>
 
-<script src="/socket.io/socket.io.js"></script>
-<script>
-    const socket = io();
-    
-    // Récupérer l'XP locale ou démarrer à 0
-    let myXP = parseInt(localStorage.getItem('war_xp')) || 0;
-    
-    function updateRankDisplay() {
-        document.getElementById('user-xp').innerText = myXP;
-        let rank = "Recrue du pétrin";
-        if(myXP >= 5) rank = "Soldat du Beurre";
-        if(myXP >= 15) rank = "Capitaine Croissant";
-        if(myXP >= 30) rank = "Maréchal de la Mie";
-        document.getElementById('rank-name').innerText = rank;
-    }
+    <div class="rank-card">
+        <div class="xp-bar">ÉTAT-MAJOR : <span id="user-xp">0</span> POINTS D'EXPÉRIENCE</div>
+        <span id="rank-name">Recrue du Pétrin</span>
+    </div>
 
-    socket.on('updateScores', (data) => {
-        document.getElementById('global-pain').innerText = data.global.pain;
-        document.getElementById('global-choco').innerText = data.global.chocolatine;
-        document.getElementById('daily-pain').innerText = data.daily.pain;
-        document.getElementById('daily-choco').innerText = data.daily.chocolatine;
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        
+        // --- GESTION DE L'EXPÉRIENCE LOCALE ---
+        let myXP = parseInt(localStorage.getItem('war_xp')) || 0;
+
+        function updateRankDisplay() {
+            document.getElementById('user-xp').innerText = myXP;
+            let rank = "Recrue du Pétrin";
+            
+            if(myXP >= 5)  rank = "Soldat du Beurre";
+            if(myXP >= 15) rank = "Sergent du Feuilletage";
+            if(myXP >= 30) rank = "Lieutenant de la Baguette";
+            if(myXP >= 50) rank = "Commandant de la Croûte";
+            if(myXP >= 100) rank = "MARÉCHAL DE LA RÉPUBLIQUE";
+            
+            document.getElementById('rank-name').innerText = rank;
+        }
+
+        // --- RÉCEPTION DES SCORES ---
+        socket.on('updateScores', (data) => {
+            // Mise à jour des chiffres
+            document.getElementById('global-pain').innerText = data.global.pain;
+            document.getElementById('global-choco').innerText = data.global.chocolatine;
+            document.getElementById('daily-pain').innerText = data.daily.pain;
+            document.getElementById('daily-choco').innerText = data.daily.chocolatine;
+
+            // Mise à jour de la barre visuelle (basée sur les votes du jour)
+            const total = data.daily.pain + data.daily.chocolatine || 1;
+            const percentPain = (data.daily.pain / total) * 100;
+            document.getElementById('bar-pain').style.width = percentPain + "%";
+            document.getElementById('bar-choco').style.width = (100 - percentPain) + "%";
+        });
+
+        // --- ACTION DE VOTE ---
+        function castVote(choice) {
+            socket.emit('vote', choice);
+        }
+
+        socket.on('voteSuccess', () => {
+            myXP += 1; // +1 XP par vote réussi
+            localStorage.setItem('war_xp', myXP);
+            updateRankDisplay();
+            disableButtons();
+            alert("Action héroïque enregistrée ! Votre influence grandit.");
+        });
+
+        socket.on('alreadyVoted', () => {
+            disableButtons();
+            alert("Repos, soldat ! Vous avez déjà combattu aujourd'hui.");
+        });
+
+        function disableButtons() {
+            document.getElementById('btn-pain').disabled = true;
+            document.getElementById('btn-choco').disabled = true;
+        }
+
+        // Initialisation au chargement
         updateRankDisplay();
-    });
-
-    function castVote(choice) {
-        socket.emit('vote', choice);
-    }
-
-    socket.on('voteSuccess', () => {
-        myXP += 1; // Augmente l'expérience
-        localStorage.setItem('war_xp', myXP);
-        updateRankDisplay();
-        alert("Action héroïque enregistrée ! +1 XP");
-        document.querySelectorAll('button').forEach(b => b.disabled = true);
-    });
-
-    socket.on('alreadyVoted', () => {
-        alert("Reposez-vous soldat, revenez demain !");
-        document.querySelectorAll('button').forEach(b => b.disabled = true);
-    });
-
-    updateRankDisplay();
-</script>
+    </script>
+</body>
+</html>
